@@ -1,6 +1,7 @@
 #Executable
 test
 #LKM intermediates
+.tmp_versions/
 .uttersense.ko.cmd
 .uttersense.mod.o.cmd
 .uttersense.o.cmd
