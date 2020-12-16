@@ -1,2 +1,13 @@
 #Executable
 test
+#LKM intermediates
+.uttersense.ko.cmd
+.uttersense.mod.o.cmd
+.uttersense.o.cmd
+Module.symvers
+modules.order
+uttersense.ko
+uttersense.mod.c
+uttersense.mod.o
+uttersense.o
+
