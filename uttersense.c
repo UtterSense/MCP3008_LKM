@@ -561,7 +561,7 @@ void decode(char* elem, char byte)
 }   
 
 
-static int __init I2CModule_init(void)
+static int __init SPIModule_init(void)
 {
    int res;
    
@@ -597,7 +597,7 @@ static int __init I2CModule_init(void)
 }
 
 
-static void __exit I2CModule_exit(void)
+static void __exit SPIModule_exit(void)
 {
         
    
@@ -618,12 +618,12 @@ static void __exit I2CModule_exit(void)
        
 }
 
-module_init(I2CModule_init);
-module_exit(I2CModule_exit);
+module_init(SPIModule_init);
+module_exit(SPIModule_exit);
 
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Michael McGetrick");
-MODULE_DESCRIPTION("I2C test driver for the Raqspberry Pi");
+MODULE_DESCRIPTION("SPI test driver for the Raspberry Pi");
 MODULE_VERSION("0.1");
 
