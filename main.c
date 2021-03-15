@@ -42,11 +42,19 @@
 
 //DEFINES ---------------------------------------
 //#define SAMPLING_RATE     4000.0f//1000.0f  
+#define NUM_ADC_CHANS 		3
+
+
 	
 
 //ATTRIBUTES: -----------------------------------------
 int EXIT_PROGRAM = 	0;
 char *PROG_MODE  = 	"TEST";		//TEST: GRAPHICS
+
+//MCP3008 Parameters
+int chanIndex = 0; // Index of ADC channel
+int readMode = 1 ; //Single:1; Differential: 0
+int chanVal[NUM_ADC_CHANS];
  
 uint64_t sample_delay;
 float data[1000];
@@ -71,26 +79,53 @@ int main(void) {
    //Register handler for capturing CTL-C signal:
 	signal(SIGINT,ctrl_c_handler);
             
-	/*
-	printf("Display Length: %d\n", (int)DATA_LEN);
-	printf("Sample rate: %f\n", (float) SAMPLE_RATE);
-	printf("SAMPLE_MODE: %d\n", SAMPLE_MODE);
-	
-	      
-	              
-       
+	    
 	//Initialise SPI for MCP3008:
 	printf("Initialising SPI for MCP3008 peripheral.....\n");
-	printf("BCM2835 Library version:   %d\n\n", getBCM2835Version());
-	//MCP3008_Init(SAMPLING_RATE);
-	MCP3008_Init(SAMPLE_RATE);	
+	
+	MCP3008_Init();
+	//set parameters (if not default)
+	//setParams(readMode,chanIndex);	
+	//int val = readADC();
+	//printf("ADC reading: %d\n",val);	
+		
+		
+	
+	printf("ADC Readings\n");	
+	fprintf(stdout, "COUNT    CHAN1    CHAN2    CHAN3\n");	
+	
+	int time_int = 1;  //seconds
+	int numCnts = 100;
+	for(int j=0;j < numCnts; j++)
+	{
+		for(int i=0; i < NUM_ADC_CHANS;i++)
+		{
+			//Delay
+			sleep(time_int);
+			
+			//Change transmit control bytes
+			setParams(readMode,i);
+			//Read the ADC channel
+			chanVal[i] = readADC();
+		  
+			
+		}//i	
+		
+		//Print the current values:
+		printf("%d         %d        %d     %d\n", j,chanVal[0],chanVal[1],chanVal[2]);
+}//j
+
+	
+	//Close device:
+	close_dev();
+				
+				
+				
 					 
-	sample_delay = getSamplingRate();
-	printf("Delay in micro-secs: %lld\n",sample_delay);
 			 
-	//printf("Exiting program!\n");
-	//exit(0);      
-	*/
+	printf("Exiting program!\n");
+	exit(0);      
+	
 	
 	 
 	if(strcmp(PROG_MODE,"TEST") == 0)

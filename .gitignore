@@ -1,14 +1,14 @@
 #Executable
 test
 #LKM intermediates
+.mcp3008_dt.ko.cmd
+.mcp3008_dt.mod.o.cmd
+.mcp3008_dt.o.cmd
 .tmp_versions/
-.uttersense.ko.cmd
-.uttersense.mod.o.cmd
-.uttersense.o.cmd
 Module.symvers
 modules.order
-uttersense.ko
-uttersense.mod.c
-uttersense.mod.o
-uttersense.o
+mcp3008_dt.ko
+mcp3008_dt.mod.c
+mcp3008_dt.mod.o
+mcp3008_dt.o
 
