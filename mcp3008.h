@@ -16,32 +16,27 @@
 #endif
 
 #define LEN 10
+#define DRIVER_NAME	"mcp3008"
 
-struct DateTime {
-	char Year[LEN];
-	char Month[LEN];
-	char Day[LEN];
-	char Date[LEN];
-	char Hour[LEN];
-	char Minute[LEN];
-	char Second[LEN];
+
+
+struct adcSettings {
+	int readMode;   
+	int chanIndex;   
 };	
 
-struct DateTime dt;
+struct adcSettings settings;
 
-struct Temperature {
-	char TempUpper[LEN];   //Integer part
-	char TempLower[LEN];   //Decimal part
-};	
-
-struct Temperature temp;
-
-
-	
 
 void mcp3008_test(void);
 char* jni_test(void);
-int init_dev(void);
+int MCP3008_Init(void);
+void setParams(int rm, int ch);  //Set ADC params
+int readADC();
+uint16_t getVal(uint8_t msb,uint8_t lsb);
+
+
+//File operations
 void close_dev(void);
 int32_t read_byte(char addr);
 int32_t read_data(char* elem);

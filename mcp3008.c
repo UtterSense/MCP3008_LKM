@@ -12,6 +12,7 @@
 #include <sys/ioctl.h>               //Communication facility between kernel and user space
 #include <signal.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "mcp3008.h"
 									
 
@@ -58,18 +59,22 @@ char* jni_test(void)
 
 
 //Open the device driver
-int init_dev(void)
+int MCP3008_Init(void)
 {
 	
-   LOGI("Opening the ds3231 device driver\n");
-		
-   //Open driver:
-   fd = open("/dev/ds3231", O_RDWR);             // Open the device with read/write access
+   char path[20];
+   sprintf(path,"%s%s", "/dev/",DRIVER_NAME);
+   
+   LOGI("Opening device driver: %s\n",DRIVER_NAME);
+   LOGI("Driver path: %s\n", path);
+      
+   //Open driver:   
+   fd = open(path, O_RDWR);             // Open the device with read/write access
    if (fd < 0)
    {
 		LOGI("Failed to open the device driver...");
-		LOGI("The error number: %d",errno);
-		LOGI("Error description: %s",strerror(errno));
+		LOGI("The error number: %d\n",errno);
+		LOGI("Error description: %s\n",strerror(errno));
 				
 		return errno;
    }
@@ -79,7 +84,58 @@ int init_dev(void)
    return 0;
     	
 	
-}//init_dev
+}//MCP3008_Init
+
+
+void setParams(int rm, int ch)
+{
+	
+	settings.readMode = rm;
+	settings.chanIndex = ch;
+		
+	char wbuf[2];
+   wbuf[0] = settings.readMode;
+   wbuf[1] = settings.chanIndex;
+	write(fd,wbuf,sizeof(wbuf));
+	  
+	
+}//setParams	
+
+
+
+int readADC()
+{
+			
+	uint8_t wbuf[2];
+   wbuf[0] = 0x00;
+   wbuf[1] = 0x00;
+   
+   uint16_t val;
+   
+   
+	read(fd,wbuf,sizeof(wbuf));
+		 
+   val = getVal(wbuf[0],wbuf[1]);
+     
+   return val;
+   
+   
+	
+}//readADC	
+
+
+uint16_t getVal(uint8_t msb,uint8_t lsb)
+{
+   
+   uint16_t val_msb = msb;
+   uint16_t val_lsb = lsb;
+	val_msb = val_msb << 8;
+	
+   return  val_msb | val_lsb;
+   
+}//getVal
+
+
 
 
 int32_t read_byte(char addr)
@@ -134,7 +190,7 @@ int32_t write_byte(char elem, char data)
 //Close the device driver	
 void close_dev(void)
 {
-    LOGI("Closing the ds3231 device driver\n");
+    LOGI("Closing the %s device driver\n",DRIVER_NAME);
 	close(fd);
 	
 }//close_dev

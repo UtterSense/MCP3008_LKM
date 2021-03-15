@@ -1,4 +1,4 @@
-obj-m+=uttersense.o
+obj-m+=mcp3008_dt.o
 
 INCLUDES = -I/home/pi/CProjects/Graphics/Simple-Graphics
 
