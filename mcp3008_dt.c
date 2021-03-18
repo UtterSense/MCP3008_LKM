@@ -286,15 +286,11 @@ uint16_t readRaw()
 			printk(KERN_INFO "There was a failure with the SPI data transfer!");
 			return EINVAL;
 	}
-	else {
-			printk(KERN_INFO "SPI data transfer OK!");
-			
-	}
-			
+				
 	//Get the ADC value:
 	rx_data[1] &= 0x03;    //Define most significant byte
 	val = getVal(rx_data[1],rx_data[2]);
-	printk(KERN_INFO "ADC value: %d", val);
+	//printk(KERN_INFO "ADC value: %d", val);
 	
 	message[0] = rx_data[1];
    message[1] = rx_data[2];
@@ -384,17 +380,18 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
    //NB: Need this function to copy from user space to kernel space!!
    //    If not, we are likely to crash (as in Android implementation)
    error_count = copy_from_user(rec_buf,buffer,sizeof(buffer));
-   printk(KERN_INFO "Received:  %s\n",rec_buf);
+   //printk(KERN_INFO "Received:  %s\n",rec_buf);
 	
 	//Read ADC value
 	val = readRaw();
 	
-	printk(KERN_INFO "val: %x\n", val);
+	//printk(KERN_INFO "val: %x\n", val);
 	size_of_message = strlen(message);
    
    //NB: Need this function to copy from kernel space to user space!!
    error_count = copy_to_user(buffer, message, size_of_message);
      
+   /*
    if (error_count==0){            // if true then have success
       printk(KERN_INFO "Sent %d characters to the user\n", size_of_message);
       return (size_of_message=0);  // clear the position to the start and return 0
@@ -403,7 +400,8 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
       printk(KERN_INFO "Failed to send %d characters to the user\n", error_count);
       return -EFAULT;              // Failed -- return a bad address message (i.e. -14)
    } 
-   
+   */
+   return 0;
    
 }
 //END: FILE OPERATIONS -------------------------------------------------------------
