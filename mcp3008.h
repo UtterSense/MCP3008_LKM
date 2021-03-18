@@ -17,6 +17,12 @@
 
 #define LEN 10
 #define DRIVER_NAME	"mcp3008"
+#define VREF              3.3    //Reference voltage for analog measurements    
+#define MAX_ANALOG_VAL    1024   //Max. integer value of 10 bit analog signal 
+
+
+unsigned int delay_ms;      //Delay in milliseconds
+uint64_t delay_us;          //Delay in microseconds    
 
 
 
@@ -29,10 +35,11 @@ struct adcSettings settings;
 
 
 void mcp3008_test(void);
+uint64_t getSamplingRate(void);
 char* jni_test(void);
-int MCP3008_Init(void);
+int MCP3008_Init(float sample_rate);
 void setParams(int rm, int ch);  //Set ADC params
-int readADC();
+float readADC();
 uint16_t getVal(uint8_t msb,uint8_t lsb);
 
 

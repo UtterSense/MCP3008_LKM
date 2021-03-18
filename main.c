@@ -34,6 +34,7 @@
 //#include <unistd.h>
 #include <sys/time.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "graph.h"
 #include "mcp3008.h"
@@ -59,16 +60,19 @@ int chanVal[NUM_ADC_CHANS];
 uint64_t sample_delay;
 float data[1000];
 
+struct timespec req,rem;
+
 //File attributes
 FILE *fp;
 char *filename = "data.csv";
-bool saveToFile = false;
+bool saveToFile = true;
 
 
 
 //FUNCTION DECLARATIONS -------------------------
 void ctrl_c_handler(int sig);
-//void doTest();
+void sys_delay();
+void doTest();
 //void sample_BufferMode();
 void doGraph();
 void init_graph();
@@ -83,57 +87,36 @@ int main(void) {
 	//Initialise SPI for MCP3008:
 	printf("Initialising SPI for MCP3008 peripheral.....\n");
 	
-	MCP3008_Init();
+	
+	MCP3008_Init(SAMPLE_RATE);
 	//set parameters (if not default)
 	//setParams(readMode,chanIndex);	
-	//int val = readADC();
-	//printf("ADC reading: %d\n",val);	
-		
-		
+	printf("Sample rate: %f\n",SAMPLE_RATE);
 	
-	printf("ADC Readings\n");	
-	fprintf(stdout, "COUNT    CHAN1    CHAN2    CHAN3\n");	
-	
-	int time_int = 1;  //seconds
-	int numCnts = 100;
-	for(int j=0;j < numCnts; j++)
-	{
-		for(int i=0; i < NUM_ADC_CHANS;i++)
-		{
-			//Delay
-			sleep(time_int);
-			
-			//Change transmit control bytes
-			setParams(readMode,i);
-			//Read the ADC channel
-			chanVal[i] = readADC();
-		  
-			
-		}//i	
-		
-		//Print the current values:
-		printf("%d         %d        %d     %d\n", j,chanVal[0],chanVal[1],chanVal[2]);
-}//j
-
-	
-	//Close device:
-	close_dev();
-				
-				
-				
 					 
-			 
-	printf("Exiting program!\n");
-	exit(0);      
+	sample_delay = getSamplingRate();
+	printf("Delay in micro-secs: %lld\n",sample_delay);
+		
 	
-	
+	if(sample_delay < 1000000)
+	{
+		req.tv_sec = 0;
+	   req.tv_nsec = sample_delay*1000;
+	}
+	else
+	{
+		req.tv_sec = sample_delay/1000000;
+	   req.tv_nsec = 0;
+		
+	}	
+		
 	 
 	if(strcmp(PROG_MODE,"TEST") == 0)
 	{
-	   
-		//doTest();
-		printf("Peforming test!\n");
-		exit(1);
+		
+	   printf("Peforming test!\n");
+	   doTest();
+		
 		
 	}
 	else if(strcmp(PROG_MODE,"GRAPHICS") == 0)
@@ -142,10 +125,47 @@ int main(void) {
 		 //sample_BufferMode();
  	
 	}	 
-		 
+
+	
+	
+	printf("Exiting program!\n");
+	exit(0);      
+	
+
 
 }//main
 
+void sys_delay()
+{
+	//Notes:
+	// If the interval specified in struct timespec req is not an exact
+	// multiple of the underlying clock, then the interval will be rounded
+	// up to the next multiple.
+	//TBC for more accuracy with fast sampling
+	
+	
+	//Delay execution of program for desired time:
+	int res = nanosleep(&req,&rem);
+	if(res < 0)
+	{
+		printf("nanosleep() ERROR!\n");
+		printf("Error number %d: %s\n",errno,strerror(errno));
+		if(errno == EINVAL)
+		{
+			printf("Nanosecond parameter out of bounds (< 0 or > 999999999)\n");
+		}
+		if(errno == EINTR)
+		{
+			printf("Sleep interrupted by a signal handler\n");
+			//USe this to schedule the remainin time
+			//If we have defined &rem, this will contain the remaining time
+			//needed to complete request by calling nanosleep(&rem,NULL);
+		}	
+		
+	}	
+	
+	
+}//sys_delay	
 
 /*
 void sample_BufferMode()  //Send data for graphing when data buffer 
@@ -358,17 +378,14 @@ void doGraph()
 
 
 
-
-/*
 void doTest()
 {
 		  
-	 
 	 //Sample and save data to file for subsequent analysis:
 	 
 	 struct timeval tv_start,tv_end;
 	 uint64_t time_diff;
-	 
+	
 	 
 	 //Open file for data:
 	 if(saveToFile)
@@ -385,11 +402,13 @@ void doTest()
 	 //while(EXIT_PROGRAM == 0)
 	 gettimeofday(&tv_start,NULL);
 	 for(int i=0; i<max_cnt;i++)
-	 {             
-		  data[i] = readSample();
-		  
-		  //bcm2835_delayMicroseconds(sample_delay);   
-		       
+	 { 
+		              
+		  data[i] = readADC();
+		  //printf("Cnt: %d, Val: %.2f\n",i,readADC());
+	     sys_delay();   
+		
+		
 					 
 	 } 
 	 gettimeofday(&tv_end,NULL);	
@@ -407,7 +426,7 @@ void doTest()
 	 //Save sampled data to file:
 	 if(saveToFile)
 	 {
-		 for(int i=0;i<1000;i++)
+		 for(int i=0;i<max_cnt;i++)
 		 {
 			 fprintf(fp,"%.2f\n",data[i]);
 		 } 
@@ -417,16 +436,17 @@ void doTest()
     }
 	 
 	 printf("Closing down SPI interface...\n");
-	 MCP3008_Close();
+	 //Close device:
+	  close_dev();
+		
+	 
 	 printf("SPI closed down\n");
-	 
-	 
 	 printf("Exiting program\n");              
 	 exit(0);					
     
 		
 }//doTest	
-*/
+
 
 
 //NB: This handler is working for the CTL-C keyboard signal

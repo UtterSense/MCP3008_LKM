@@ -59,7 +59,7 @@ char* jni_test(void)
 
 
 //Open the device driver
-int MCP3008_Init(void)
+int MCP3008_Init(float sample_rate)
 {
 	
    char path[20];
@@ -80,11 +80,22 @@ int MCP3008_Init(void)
    }
    LOGI("Opened device driver OK\n");
   	
+  	//Set dsample delay period:
+  	delay_us = (1.0/(float)sample_rate)*1000000;
+  	
 	
    return 0;
     	
 	
 }//MCP3008_Init
+
+
+uint64_t getSamplingRate(void)
+{
+   return delay_us;
+   
+}//getSamplingRate   
+
 
 
 void setParams(int rm, int ch)
@@ -103,9 +114,10 @@ void setParams(int rm, int ch)
 
 
 
-int readADC()
+float readADC()
 {
-			
+	
+	float volts;		
 	uint8_t wbuf[2];
    wbuf[0] = 0x00;
    wbuf[1] = 0x00;
@@ -116,8 +128,13 @@ int readADC()
 	read(fd,wbuf,sizeof(wbuf));
 		 
    val = getVal(wbuf[0],wbuf[1]);
-     
-   return val;
+   
+   
+   //Convert to floating point:
+   volts = ((float)val*VREF)/MAX_ANALOG_VAL;
+
+        
+   return volts;
    
    
 	

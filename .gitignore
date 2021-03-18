@@ -1,5 +1,9 @@
 #Executable
 test
+#Data files
+data.csv
+sample_rate_100Hz.xls
+sample_rate_1000Hz.xls
 #LKM intermediates
 .mcp3008_dt.ko.cmd
 .mcp3008_dt.mod.o.cmd
