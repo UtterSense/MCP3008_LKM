@@ -50,7 +50,7 @@
 
 //ATTRIBUTES: -----------------------------------------
 int EXIT_PROGRAM = 	0;
-char *PROG_MODE  = 	"TEST";		//TEST: GRAPHICS
+char *PROG_MODE  = 	"GRAPHICS";		//TEST: GRAPHICS
 
 //MCP3008 Parameters
 int chanIndex = 0; // Index of ADC channel
@@ -75,6 +75,7 @@ void sys_delay();
 void doTest();
 //void sample_BufferMode();
 void doGraph();
+void sample_BufferMode();
 void init_graph();
 
 //-----------------------------------------------
@@ -122,7 +123,7 @@ int main(void) {
 	else if(strcmp(PROG_MODE,"GRAPHICS") == 0)
 	{
 		
-		 //sample_BufferMode();
+		 sample_BufferMode();
  	
 	}	 
 
@@ -167,7 +168,7 @@ void sys_delay()
 	
 }//sys_delay	
 
-/*
+
 void sample_BufferMode()  //Send data for graphing when data buffer 
 								  //filled - use when high sampling rates
 								  //required. Data captured without intermediate
@@ -228,7 +229,7 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 	init_graph();
 	
 	
-	if(SAMPLE_MODE == 0) //bcm delay mode
+	if(SAMPLE_MODE == 0) //Delay mode
 	{
 		while(EXIT_PROGRAM == 0)
 		{
@@ -236,9 +237,9 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 			for(int i=0; i< DATA_LEN;i++)
 			{
 				//Delay for set time: 					
-				bcm2835_delayMicroseconds(sample_delay);
+				sys_delay();
 				
-				PLOT_BUFFER[i] = readSample();
+				PLOT_BUFFER[i] = readADC();
 			}	
 			
 			//Graph when buffer is full
@@ -260,7 +261,7 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 			for(int i=0; i< DATA_LEN;i++)
 			{
 				
-				PLOT_BUFFER[i] = readSample();
+				PLOT_BUFFER[i] = readADC();
 			}	
 			
 			//Graph when buffer is full
@@ -278,7 +279,7 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 				
 	
 }//sample_BufferMode	
-*/
+
 
 
 void init_graph()
