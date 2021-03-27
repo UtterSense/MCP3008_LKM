@@ -76,7 +76,7 @@ int MCP3008_Init(float sample_rate)
 		LOGI("The error number: %d\n",errno);
 		LOGI("Error description: %s\n",strerror(errno));
 				
-		return errno;
+		return -errno;
    }
    LOGI("Opened device driver OK\n");
   	

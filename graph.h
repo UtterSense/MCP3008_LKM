@@ -36,7 +36,7 @@
 											 //7000.0f if SPI Clock divider is BCM2835_SPI_CLOCK_DIVIDER_2048
 											 //14000.0f if SPI Clock divider is BCM2835_SPI_CLOCK_DIVIDER_1024
 											 	
-#define MAX_SIG_FREQ		20.0f   //Signal bandwidth or frequency for single frequency
+#define MAX_SIG_FREQ		10.0f   //Signal bandwidth or frequency for single frequency
 #define NUM_CYCLES		3.0f		//Number of Cycles to display (maximum frequency) 
 #define DISPLAY_LEN  	(int) round( (SAMPLE_RATE/MAX_SIG_FREQ)*NUM_CYCLES )  //SAMPLE_RATE //(int)((float)SAMPLE_RATE/(float)MAX_SIG_FREQ)*(float)NUM_CYCLES   //Num samples to display in trace 
 #define DATA_LEN  		DISPLAY_LEN //1000 //This is also length of x axis on plot
@@ -46,7 +46,7 @@
 #define DATA_SKIP		0//500  //Define the number of incoming data samples to ignore before string plotting 
 							//Avoids any sprious data coming through on initial startup/reset
 							
-#define DC_OFFSET		-1.65 + 0.20//-2.25//-2.5//Define offset to match dc offset provided in MCU							
+#define DC_OFFSET		-1.6//-1.65 + 0.20//-2.25//-2.5//Define offset to match dc offset provided in MCU							
 									//There appears to be 0.25 difference in expected value (could be down to resistor error toloerance)
 
 
@@ -69,8 +69,8 @@
 #define LOG_MODE     0
 
 //NB - Ensure we do not define 0 for log plots
-#define Y_MIN        -2.0
-#define Y_MAX        2.0
+#define Y_MIN        -1.5
+#define Y_MAX        1.5
 #define X_MIN        0.0
 #define X_MAX        DATA_LEN
 
