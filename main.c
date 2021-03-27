@@ -89,7 +89,13 @@ int main(void) {
 	printf("Initialising SPI for MCP3008 peripheral.....\n");
 	
 	
-	MCP3008_Init(SAMPLE_RATE);
+	int res = MCP3008_Init(SAMPLE_RATE);
+	if(res < 0)
+	{
+		printf("Problem initialising device - exiting program!\n");
+		exit(0);	
+	}	
+	
 	//set parameters (if not default)
 	//setParams(readMode,chanIndex);	
 	printf("Sample rate: %f\n",SAMPLE_RATE);

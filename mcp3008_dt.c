@@ -65,8 +65,11 @@
 #define NUM_WORDS				3  //Require 3 bytes for complete data transmission
 #define VREF              3.3    //Reference voltage for analog measurements    
 #define MAX_ANALOG_VAL    1024   //Max. integer value of 10 bit analog signal 
-#define SPI_CLK_FREQ		  1000000	
-#define MES_LEN			  2     //Length of data set to return to user-space				
+#define SPI_CLK_FREQ		  683594 //1000000	//CPU: 1.4GHz: 1024 divider -> 1.37MHz; 2048 divider -> 0.68MHz
+
+#define MES_LEN			  2     //Length of data set to return to user-space	
+
+static DEFINE_MUTEX(spi0_mutex);	    ///Declare mutex			
 
 int INPUT_CHAN = 0;
 int RD_MODE = 1;
@@ -331,8 +334,11 @@ void setTransferWords()
 //FILE OPERAIONS HERE: -------------------------------------------------
 static int dev_open(struct inode *inodep, struct file *filep){
    
-   printk(KERN_INFO "Device %s has been opened \n",DEVICE_NAME);
-      
+   if(!mutex_trylock(&spi0_mutex)){  // Acquire the mutex (returns 0 on fail)
+	   printk(KERN_ALERT "EBBChar: Device in use by another process");
+	   return -EBUSY;
+   }
+   printk(KERN_INFO "Device %s has been opened with mutex \n",DEVICE_NAME);  
     
    return 0;
 }
@@ -341,6 +347,7 @@ static int dev_open(struct inode *inodep, struct file *filep){
 
 static int dev_release(struct inode *inodep, struct file *filep){
    
+   mutex_unlock(&spi0_mutex);
    printk(KERN_INFO "Device %s has been closed \n",DEVICE_NAME);
    return 0; 
    
@@ -433,7 +440,7 @@ static int __init SPIModule_init(void)
 		
 	 }		 
  
-      
+   mutex_init(&spi0_mutex); //Initialize mutex
    return res;
 }
 
@@ -441,6 +448,9 @@ static int __init SPIModule_init(void)
 
 static void __exit SPIModule_exit(void)
 {
+   
+   mutex_destroy(&spi0_mutex);  //Destroy  dynamically-allocated mutex
+   
     //Unregister SPI driver:
 	spi_unregister_driver(&mcp3008_driver);
 	printk(KERN_INFO "Unregistered SPI driver.\n");
