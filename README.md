@@ -18,7 +18,8 @@ using the SPI protocol.
 
 ### MCP3008 Device Driver
 
-TBD
+A detailed discussion of the efficiency of the device driver can be found at the project Wiki:\
+https://github.com/MichaelMcGetrick/MCP3008_LKM/wiki
 
        	    	    
 		
