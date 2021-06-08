@@ -38,19 +38,25 @@
 
 #include "graph.h"
 #include "mcp3008.h"
+#include "ds3231.h"
 
 
 
 //DEFINES ---------------------------------------
 //#define SAMPLING_RATE     4000.0f//1000.0f  
+#define DATA_ARRAY_FLAG	0 //1: create data array of samples for metric test; 0: single sample
 #define NUM_ADC_CHANS 		3
+#define LINUX				0
+#define RTC					1
+#define TEST_TYPE			RTC
 
 
 	
 
 //ATTRIBUTES: -----------------------------------------
 int EXIT_PROGRAM = 	0;
-char *PROG_MODE  = 	"GRAPHICS";		//TEST: GRAPHICS
+char *PROG_MODE  = 	"TEST";		//TEST: GRAPHICS
+
 
 //MCP3008 Parameters
 int chanIndex = 0; // Index of ADC channel
@@ -58,14 +64,17 @@ int readMode = 1 ; //Single:1; Differential: 0
 int chanVal[NUM_ADC_CHANS];
  
 uint64_t sample_delay;
-float data[1000];
+float data[2000];
 
 struct timespec req,rem;
 
 //File attributes
 FILE *fp;
-char *filename = "data.csv";
-bool saveToFile = true;
+//char *filename = "rtc_metrics_clk_0_68.csv";
+//char *filename = "rtc_metrics_clk_1_37.csv";
+//char *filename = "linux_metrics_clk_1_37_fastloop.csv";
+char *filename = "lkm_linux_timer_integrity.csv";
+bool saveToFile = false;
 
 
 
@@ -84,6 +93,7 @@ int main(void) {
    //Register handler for capturing CTL-C signal:
 	signal(SIGINT,ctrl_c_handler);
             
+	
 	    
 	//Initialise SPI for MCP3008:
 	printf("Initialising SPI for MCP3008 peripheral.....\n");
@@ -121,8 +131,7 @@ int main(void) {
 	if(strcmp(PROG_MODE,"TEST") == 0)
 	{
 		
-	   printf("Peforming test!\n");
-	   doTest();
+		doTest();
 		
 		
 	}
@@ -308,7 +317,8 @@ void init_graph()
 		l_caps.vmin_caption = LEGEND_CAPTION2;
 		l_caps.vavg_caption = LEGEND_CAPTION3;
 		l_caps.vpp_caption = LEGEND_CAPTION4;
-		legendCaptions(l_caps);
+		 int color = 15; //Font color for captions
+		 legendCaptions(l_caps,color);
 	}
 	
 	
@@ -385,15 +395,51 @@ void doGraph()
 
 
 
-void doTest()
+void doTest()   //Measure time with Real Time Clock (ds3231)
 {
-		  
-	 //Sample and save data to file for subsequent analysis:
-	 
-	 struct timeval tv_start,tv_end;
-	 uint64_t time_diff;
 	
-	 
+	struct timeval tv_start,tv_end;
+	uint32_t ts_start, ts_end, time_diff;
+	uint64_t MAX_CNT;
+	
+	uint32_t TIME_INT = 60*2; //Time interval for sampling (secs) 
+		
+	
+	int numSamples = 24;
+	float sample_rates[] = {1.0f,10.0f,50.0f,100.0f,200.0f,250.0f,
+		                     500.0f,750.0f,1000.0f,1250.0f,1500.0f,2000.0f, 
+		                     4000.0f,5000.0f,6000.0f,7000.0f,8000.0f,9000.0f,
+		                     10000.0f,11000.0f,12000.0f,13000.0f,14000.0f,15000.0f};
+	bool save_raw_data = false;  //true: save raw data as opposed to metric test info
+	
+	//Set up required data variable  ---------------------
+#if DATA_ARRAY_FLAG == 0
+	float data;  //Just retain current sample 
+#else
+	float *data;   //Create data sample array 
+#endif	 
+	
+	 //Sample and save data to file for subsequent analysis:
+	if(TEST_TYPE == RTC)
+	{
+		printf("\n\nSAMPLING METRICS TEST WITH RTC\n");
+	}
+	else
+	{
+		printf("\n\nSAMPLING METRICS TEST WITH LINUX TIME METHODS\n");
+	}	
+	printf("----------------------------------\n");
+	
+	
+	//Close current MCP3008 session (opened in main program)
+	MCP3008_Close();
+	
+#if TEST_TYPE == RTC	
+	//Initialise RTC driver:
+   init_dev();
+#endif   
+      
+		 
 	 //Open file for data:
 	 if(saveToFile)
 	 {
@@ -404,60 +450,167 @@ void doTest()
 		 }
     }
  
-	 uint cnt = 0;
-	 uint64_t max_cnt = 1000;
-	 //while(EXIT_PROGRAM == 0)
-	 gettimeofday(&tv_start,NULL);
-	 for(int i=0; i<max_cnt;i++)
-	 { 
-		              
-		  data[i] = readADC();
-		  //printf("Cnt: %d, Val: %.2f\n",i,readADC());
-	     sys_delay();   
-		
-		
-					 
-	 } 
-	 gettimeofday(&tv_end,NULL);	
-	  
 	 
-	 time_diff = (tv_end.tv_sec*(uint64_t)1000000 + (uint64_t)tv_end.tv_usec)
-	           - (tv_start.tv_sec*(uint64_t)1000000 + (uint64_t)tv_start.tv_usec);
-	 printf("Time difference for loop (us):  %llu\n",time_diff);
-	 printf("Max count: %llu\n",max_cnt);
-	 printf("Time difference per sample (us):  %llu\n",time_diff/max_cnt);
-	 printf("Effective sampling rate:  %f\n",1.0/( ((float)time_diff/(float)max_cnt))*1000000 ) ;
-	           				  
-		
-	 
-	 //Save sampled data to file:
-	 if(saveToFile)
+	 if(SAMPLE_MODE == 1)     //Fast looping
 	 {
-		 for(int i=0;i<max_cnt;i++)
+		 numSamples = 1;
+	 }	  	 
+	 for(int j=0;j<numSamples;j++)
+	 {
+		 
+		 if(SAMPLE_MODE == 0)
 		 {
-			 fprintf(fp,"%.2f\n",data[i]);
+		 	printf("Metric test for sampling at %.2f Hz ... \n",sample_rates[j]);
+		 }
+		 else
+		 {
+			printf("Metric test for fast looping ...\n");
+		 }	 	
+		 MCP3008_Init(sample_rates[j]);
+		 sample_delay = getSamplingRate();
+		 if(sample_delay < 1000000)
+		 {
+			req.tv_sec = 0;
+			req.tv_nsec = sample_delay*1000;
+		 }
+		 else
+		 {
+			req.tv_sec = sample_delay/1000000;
+			req.tv_nsec = 0;
+			
+		 }
+		 
+	 
+		 //printf("Delay in micro-secs: %lld...\n",sample_delay);
+		 if(SAMPLE_MODE == 0)
+		 {	
+	    	MAX_CNT = sample_rates[j]*TIME_INT;
+	    }
+	    else
+	    {
+			MAX_CNT = 1000000; //1000000; //Fast loop mode
+			
+		 }	 
+#if DATA_ARRAY_FLAG == 1
+		 
+		 if((data = malloc(MAX_CNT*sizeof(float))) == NULL)
+		 {
+			printf("Problem allocating memory for metric test\n");
+			printf("Exiting program!\n");
+			exit(1);
+		 }
+#endif		 	
+
+gettimeofday(&tv_start,NULL);
+#if TEST_TYPE == RTC
+		 ts_start = getHMSTimestamp();
+#else
+		 gettimeofday(&tv_start,NULL);
+#endif		 
+		 for(int i=0; i<MAX_CNT;i++)
+		 {             
+			  
+#if DATA_ARRAY_FLAG == 1			  
+			  data[i] = readADC();
+#else			  
+			  data = readADC();			  
+#endif			  
+#if SAMPLE_MODE == 0
+			  sys_delay();   
+#endif						 
 		 } 
-		 //Close file:
+
+
+#if TEST_TYPE == RTC
+		 ts_end = getHMSTimestamp();
+		 time_diff = ts_end - ts_start;
+#else
+		 gettimeofday(&tv_end,NULL);	
+		 time_diff = (tv_end.tv_sec*(uint64_t)1000000 + (uint64_t)tv_end.tv_usec)
+					  - (tv_start.tv_sec*(uint64_t)1000000 + (uint64_t)tv_start.tv_usec);
+#endif		 			 
+		 
+		 //printf("Time start:  %lu\n",ts_start);
+		 //printf("Time end:  %lu\n",ts_end);
+#if TEST_TYPE == RTC		 
+		 printf("Time difference for loop (secs):  %lu\n",time_diff);
+		 printf("Max count: %llu\n",MAX_CNT);
+		 printf("Time difference per sample (secs):  %f\n",(float)time_diff/(float)MAX_CNT);
+		 float eff_rate = 1.0/( ((float)time_diff/(float)MAX_CNT));
+		 printf("Effective sampling rate:  %.2f\n",eff_rate) ;          				  
+#else
+       printf("Time difference for loop (us):  %llu\n",time_diff);
+		 printf("Max count: %llu\n",MAX_CNT);
+		 printf("Time difference per sample (us):  %llu\n",time_diff/MAX_CNT);
+		 //printf("Effective sampling rate:  %f\n",1.0/( ((float)time_diff/(float)MAX_CNT))*1000000 ) ;
+		 float eff_rate = 1.0/( ((float)time_diff/(float)MAX_CNT))*1000000;
+		 printf("Effective sampling rate:  %.2f\n",eff_rate) ;          				  
+		 
+#endif		 
+		 //Save sampled data to file:
+		 if(saveToFile)
+		 {
+			 
+			 if(save_raw_data)
+			 {
+				 for(int i=0;i<MAX_CNT;i++)
+				 {
+ #if DATA_ARRAY_FLAG == 1
+					 fprintf(fp,"%.2f\n",data[i]);
+#else
+					 fprintf(fp,"%.2f\n",data);
+#endif					 
+				 } 
+		    }
+		    else
+		    {
+			 	if(SAMPLE_MODE == 0)
+			 	{
+			 		fprintf(fp,"%.2f %.2f\n",sample_rates[j],eff_rate);
+			 	}
+			 	else
+			 	{
+					fprintf(fp,"fast-looping sample rate:  %.2f\n",eff_rate);	
+				}		
+			 }	 
+			 
+		 }
+		 
+		 printf("Closing down SPI interface...\n");
+		 MCP3008_Close();
+		 printf("SPI closed down\n");
+		 //Free dynamically allocated memory
+#if DATA_ARRAY_FLAG == 1
+	 	free(data);
+#endif	    
+		 
+	}//j
+	
+	if(saveToFile)
+	{ 
+	 	//Close file:
 		 fclose(fp);
 		 printf("Data file closed\n");
-    }
+ 
+	}
+	
+#if TEST_MODE == RTC	
+	 //Close RTC driver:
+    close_dev();
+#endif    
 	 
-	 printf("Closing down SPI interface...\n");
-	 //Close device:
-	  close_dev();
-		
-	 
-	 printf("SPI closed down\n");
 	 printf("Exiting program\n");              
 	 exit(0);					
     
-		
-}//doTest	
+   
+
+}//doTest_RTC
 
 
 
 //NB: This handler is working for the CTL-C keyboard signal
-//	  This will exit the while loop so as to exit the program gracefully
+//	  This will exit the while loop sple (us):  1157
+//   to exit the program gracefully
 //	  (We need to close the connection to the serial terminal)
 void ctrl_c_handler(int sig)
 {

@@ -27,12 +27,12 @@
 
 
 #define BUFFER_LENGTH 256               ///< The buffer length for messages 
-static char receive[BUFFER_LENGTH] = {0};     ///< The receive buffer from the LKM
+static char rec_buf[BUFFER_LENGTH] = {0};     ///< The receive buffer from the LKM
 
 int res;
   
 //File pointer for file commands  
-int fd;
+static int fd;
 
 //Flag for logging:
 bool logging = true;
@@ -48,7 +48,7 @@ void mcp3008_test(void)
 
 }//mcp3008_test
 
-char* jni_test(void)
+static char* jni_test(void)
 {
 	//Test to check we can interface with Java space
 	return "This is an updated jni test on 5 April from keypad!\n";
@@ -65,10 +65,11 @@ int MCP3008_Init(float sample_rate)
    char path[20];
    sprintf(path,"%s%s", "/dev/",DRIVER_NAME);
    
-   LOGI("Opening device driver: %s\n",DRIVER_NAME);
-   LOGI("Driver path: %s\n", path);
+   //LOGI("Opening device driver: %s\n",DRIVER_NAME);
+   //LOGI("Driver path: %s\n", path);
       
    //Open driver:   
+   
    fd = open(path, O_RDWR);             // Open the device with read/write access
    if (fd < 0)
    {
@@ -78,7 +79,8 @@ int MCP3008_Init(float sample_rate)
 				
 		return -errno;
    }
-   LOGI("Opened device driver OK\n");
+   //LOGI("Opened device driver OK\n");
+  	
   	
   	//Set dsample delay period:
   	delay_us = (1.0/(float)sample_rate)*1000000;
@@ -155,28 +157,28 @@ uint16_t getVal(uint8_t msb,uint8_t lsb)
 
 
 
-int32_t read_byte(char addr)
+int32_t readByte(char addr)
 {
    //Read value back from kernel driver
    //Define address to read from:
-   receive[0] = addr;   
-   res = read(fd, receive,BUFFER_LENGTH);
+   rec_buf[0] = addr;   
+   res = read(fd, rec_buf,BUFFER_LENGTH);
    if (res < 0){
       perror("Failed to read the message from the device.");
       return errno;
    }
-   printf("The received message is: %s\n", receive);
+   printf("The received message is: %s\n", rec_buf);
      
 }  
 
 
-int32_t read_data(char* elem)
+int32_t readData(char* elem)
 {
    //Read value back from kernel driver
    //Define address to read from:
-   strcpy(receive,elem);
+   strcpy(rec_buf,elem);
    //res = read(fd, receive,BUFFER_LENGTH);
-   res = read(fd, receive,strlen(receive));
+   res = read(fd, rec_buf,strlen(rec_buf));
    if (res < 0){
       perror("Failed to read the message from the device.");
       return errno;
@@ -186,7 +188,7 @@ int32_t read_data(char* elem)
 }  
 
 
-int32_t write_byte(char elem, char data)
+int32_t writeByte(char elem, char data)
 {
   //Read value back from kernel driver
    //Define address to read from:
@@ -205,7 +207,7 @@ int32_t write_byte(char elem, char data)
 
 	
 //Close the device driver	
-void close_dev(void)
+void MCP3008_Close(void)
 {
     LOGI("Closing the %s device driver\n",DRIVER_NAME);
 	close(fd);
