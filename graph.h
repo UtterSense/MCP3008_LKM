@@ -31,10 +31,10 @@
 
 //USER DEFINES: ------------------------------------------------------------
 #define SAMPLE_MODE		0			//0: Delay; 1: fast looping - no delay
-#define SAMPLE_RATE		1000.0f   //Define required value for bsm delay usage
+#define SAMPLE_RATE	   100.0f   //Define required value for bsm delay usage
 											 //Fast looping (below figures based on metric tests):
-											 //7000.0f if SPI Clock divider is BCM2835_SPI_CLOCK_DIVIDER_2048
-											 //14000.0f if SPI Clock divider is BCM2835_SPI_CLOCK_DIVIDER_1024
+											 //17000.0f if SPI Clock is 0.68MHz
+											 //36000.0f if SPI Clock is 1.37MHz
 											 	
 #define MAX_SIG_FREQ		10.0f   //Signal bandwidth or frequency for single frequency
 #define NUM_CYCLES		3.0f		//Number of Cycles to display (maximum frequency) 
@@ -65,7 +65,7 @@
 #define LEGEND_CAPTION3	"Vavg:             V"
 #define LEGEND_CAPTION4	"Vpp:              V"
 
-#define PLOT_MODE    0
+#define PLOT_MODE    LINE //0
 #define LOG_MODE     0
 
 //NB - Ensure we do not define 0 for log plots

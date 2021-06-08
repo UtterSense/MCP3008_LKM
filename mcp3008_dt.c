@@ -65,7 +65,7 @@
 #define NUM_WORDS				3  //Require 3 bytes for complete data transmission
 #define VREF              3.3    //Reference voltage for analog measurements    
 #define MAX_ANALOG_VAL    1024   //Max. integer value of 10 bit analog signal 
-#define SPI_CLK_FREQ		  683594 //1000000	//CPU: 1.4GHz: 1024 divider -> 1.37MHz; 2048 divider -> 0.68MHz
+#define SPI_CLK_FREQ		  683594 //1367188//1000000	//CPU: 1.4GHz: 1024 divider -> 1.37MHz; 2048 divider -> 0.68MHz
 
 #define MES_LEN			  2     //Length of data set to return to user-space	
 
@@ -128,7 +128,7 @@ static short  size_of_message;              ///< Used to remember the size of th
 
 static struct spi_device *adcDevice;
 
-static char rec_buf[256] = {0};
+static char rec_buffer[256] = {0};
 
 
 
@@ -362,9 +362,9 @@ static ssize_t dev_write(struct file *filep, const char *buffer, size_t len, lof
 
    
    //NB: Copy user space data to kernel space
-   error_count = copy_from_user(rec_buf,buffer,sizeof(buffer));
-   RD_MODE = rec_buf[0];
-   INPUT_CHAN = rec_buf[1];
+   error_count = copy_from_user(rec_buffer,buffer,sizeof(buffer));
+   RD_MODE = rec_buffer[0];
+   INPUT_CHAN = rec_buffer[1];
    
    printk(KERN_INFO "LKM: readMode: %d\n",RD_MODE);
    printk(KERN_INFO "LKM: chanIndex: %d\n",INPUT_CHAN);
@@ -386,7 +386,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
       
    //NB: Need this function to copy from user space to kernel space!!
    //    If not, we are likely to crash (as in Android implementation)
-   error_count = copy_from_user(rec_buf,buffer,sizeof(buffer));
+   error_count = copy_from_user(rec_buffer,buffer,sizeof(buffer));
    //printk(KERN_INFO "Received:  %s\n",rec_buf);
 	
 	//Read ADC value
@@ -416,7 +416,7 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 void cleanUp(void)
 {
    //Clean up the receive/message arrays:
-   strcpy(rec_buf,"");
+   strcpy(rec_buffer,"");
    strcpy(message,"");
    
    

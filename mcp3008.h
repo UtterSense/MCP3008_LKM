@@ -36,7 +36,7 @@ struct adcSettings settings;
 
 void mcp3008_test(void);
 uint64_t getSamplingRate(void);
-char* jni_test(void);
+static char* jni_test(void);
 int MCP3008_Init(float sample_rate);
 void setParams(int rm, int ch);  //Set ADC params
 float readADC();
@@ -44,10 +44,10 @@ uint16_t getVal(uint8_t msb,uint8_t lsb);
 
 
 //File operations
-void close_dev(void);
-int32_t read_byte(char addr);
-int32_t read_data(char* elem);
-int32_t write_byte(char elem, char data);
+void MCP3008_Close(void);
+int32_t readByte(char addr);
+int32_t readData(char* elem);
+int32_t writeByte(char elem, char data);
 
 
 #ifdef ANDROID_APP
