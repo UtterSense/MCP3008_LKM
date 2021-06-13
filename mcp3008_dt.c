@@ -65,7 +65,7 @@
 #define NUM_WORDS				3  //Require 3 bytes for complete data transmission
 #define VREF              3.3    //Reference voltage for analog measurements    
 #define MAX_ANALOG_VAL    1024   //Max. integer value of 10 bit analog signal 
-#define SPI_CLK_FREQ		  683594 //1367188//1000000	//CPU: 1.4GHz: 1024 divider -> 1.37MHz; 2048 divider -> 0.68MHz
+#define SPI_CLK_FREQ		  1367188 //683594 //1367188//1000000	//CPU: 1.4GHz: 1024 divider -> 1.37MHz; 2048 divider -> 0.68MHz
 
 #define MES_LEN			  2     //Length of data set to return to user-space	
 

@@ -40,6 +40,9 @@
 #include "mcp3008.h"
 #include "ds3231.h"
 
+#include <sys/mman.h>  //temp
+#include <sys/types.h>
+
 
 
 //DEFINES ---------------------------------------
@@ -55,7 +58,7 @@
 
 //ATTRIBUTES: -----------------------------------------
 int EXIT_PROGRAM = 	0;
-char *PROG_MODE  = 	"TEST";		//TEST: GRAPHICS
+char *PROG_MODE  = 	"GRAPHICS";		//TEST: GRAPHICS
 
 
 //MCP3008 Parameters
@@ -73,7 +76,7 @@ FILE *fp;
 //char *filename = "rtc_metrics_clk_0_68.csv";
 //char *filename = "rtc_metrics_clk_1_37.csv";
 //char *filename = "linux_metrics_clk_1_37_fastloop.csv";
-char *filename = "lkm_linux_timer_integrity.csv";
+char *filename = "lkm_linux_timer_integrity_corr.csv";
 bool saveToFile = false;
 
 
@@ -86,6 +89,49 @@ void doTest();
 void doGraph();
 void sample_BufferMode();
 void init_graph();
+
+// ---BCM2835 functions and attributes for accessing
+// --- System Timer registers: -----------------------------------------
+int bcm2835_init(void);   
+int bcm2835_close(void);
+static void *mapmem(const char *msg, size_t size, int fd, off_t off);
+static void unmapmem(void **pmem, size_t size);
+uint64_t bcm2835_st_read();
+void bcm2835_st_delay(uint64_t offset_micros, uint64_t micros);
+uint32_t bcm2835_peri_read(volatile uint32_t* paddr);
+void bcm2835_delayMicroseconds(uint64_t micros);
+
+
+static uint8_t debug = 0;
+volatile uint32_t *bcm2835_st	       = (uint32_t *)MAP_FAILED;
+uint32_t *bcm2835_peripherals = (uint32_t *)MAP_FAILED;
+
+/*! On all recent OSs, the base of the peripherals is read from a /proc file */
+#define BMC2835_RPI2_DT_FILENAME "/proc/device-tree/soc/ranges"
+
+#define BCM2835_PERI_BASE               0x20000000
+/*! Size of the peripherals block on RPi 1 */
+#define BCM2835_PERI_SIZE               0x01000000
+/*! Alternate base address for RPI  2 / 3 */
+#define BCM2835_RPI2_PERI_BASE          0x3F000000
+/*! Alternate base address for RPI  4 */
+
+
+//Base Address of the System Timer registers
+#define BCM2835_ST_BASE					0x3000
+#define BCM2835_ST_CLO 			0x0004 /*!< System Timer Counter Lower 32 bits */
+#define BCM2835_ST_CHI 			0x0008 /*!< System Timer Counter Upper 32 bits */
+
+
+/*! Virtual memory address of the mapped peripherals block */
+extern uint32_t *bcm2835_peripherals;
+size_t bcm2835_peripherals_size;
+off_t bcm2835_peripherals_base;
+
+
+
+
+//---End BM2835 functions-----------------------------------------------
 
 //-----------------------------------------------
 int main(void) {
@@ -252,7 +298,8 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 			for(int i=0; i< DATA_LEN;i++)
 			{
 				//Delay for set time: 					
-				sys_delay();
+				//sys_delay();
+				bcm2835_delayMicroseconds(sample_delay);
 				
 				PLOT_BUFFER[i] = readADC();
 			}	
@@ -398,6 +445,11 @@ void doGraph()
 void doTest()   //Measure time with Real Time Clock (ds3231)
 {
 	
+	
+	//Initialise code to get access to System Timer Registers
+	bcm2835_init(); 
+	
+	
 	struct timeval tv_start,tv_end;
 	uint32_t ts_start, ts_end, time_diff;
 	uint64_t MAX_CNT;
@@ -410,7 +462,8 @@ void doTest()   //Measure time with Real Time Clock (ds3231)
 		                     500.0f,750.0f,1000.0f,1250.0f,1500.0f,2000.0f, 
 		                     4000.0f,5000.0f,6000.0f,7000.0f,8000.0f,9000.0f,
 		                     10000.0f,11000.0f,12000.0f,13000.0f,14000.0f,15000.0f};
-	bool save_raw_data = false;  //true: save raw data as opposed to metric test info
+		                     
+   bool save_raw_data = false;  //true: save raw data as opposed to metric test info
 	
 	//Set up required data variable  ---------------------
 #if DATA_ARRAY_FLAG == 0
@@ -468,17 +521,6 @@ void doTest()   //Measure time with Real Time Clock (ds3231)
 		 }	 	
 		 MCP3008_Init(sample_rates[j]);
 		 sample_delay = getSamplingRate();
-		 if(sample_delay < 1000000)
-		 {
-			req.tv_sec = 0;
-			req.tv_nsec = sample_delay*1000;
-		 }
-		 else
-		 {
-			req.tv_sec = sample_delay/1000000;
-			req.tv_nsec = 0;
-			
-		 }
 		 
 	 
 		 //printf("Delay in micro-secs: %lld...\n",sample_delay);
@@ -516,7 +558,8 @@ gettimeofday(&tv_start,NULL);
 			  data = readADC();			  
 #endif			  
 #if SAMPLE_MODE == 0
-			  sys_delay();   
+			  //sys_delay();
+			  bcm2835_delayMicroseconds(sample_delay);   
 #endif						 
 		 } 
 
@@ -599,6 +642,8 @@ gettimeofday(&tv_start,NULL);
     close_dev();
 #endif    
 	 
+	 //Close deice /dev/mem
+	 bcm2835_close();
 	 printf("Exiting program\n");              
 	 exit(0);					
     
@@ -632,4 +677,241 @@ void ctrl_c_handler(int sig)
    
          
 }//ctrl_c_handler(int sig)
+
+
+// BCM DELAY FUNCTIONS HERE ----------------------------------
+/* microseconds */
+void bcm2835_delayMicroseconds(uint64_t micros)
+{
+    struct timespec t1;
+    uint64_t        start;
+	
+    
+    /* Calling nanosleep() takes at least 100-200 us, so use it for
+    // long waits and use a busy wait on the System Timer for the rest.
+    */
+    start =  bcm2835_st_read();
+    
+    /* Not allowed to access timer registers (result is not as precise)*/
+    if (start==0)
+    {
+		
+				
+		if(micros < 1000000)
+		{
+			t1.tv_sec = 0;
+			t1.tv_nsec = 1000 * (long)(micros);
+		}
+		else
+		{
+			t1.tv_sec = micros/1000000;
+			t1.tv_nsec = 0;
+			
+		}
+		
+				
+		nanosleep(&t1, NULL);
+		return;
+    }
+    
+    
+    if (micros > 450)   //450us -> ~2222Hz
+    {
+		t1.tv_sec = 0;
+		t1.tv_nsec = 1000 * (long)(micros - 200);
+		nanosleep(&t1, NULL);
+    }    
+     
+    bcm2835_st_delay(start, micros);
+}
+
+/* Read the System Timer Counter (64-bits) */
+uint64_t bcm2835_st_read(void)
+{
+    volatile uint32_t* paddr;
+    uint32_t hi, lo;
+    uint64_t st;
+
+    if (bcm2835_st==MAP_FAILED)
+	return 0;
+
+    paddr = bcm2835_st + BCM2835_ST_CHI/4;
+    hi = bcm2835_peri_read(paddr);
+
+    paddr = bcm2835_st + BCM2835_ST_CLO/4;
+    lo = bcm2835_peri_read(paddr);
+    
+    paddr = bcm2835_st + BCM2835_ST_CHI/4;
+    st = bcm2835_peri_read(paddr);
+    
+    /* Test for overflow */
+    if (st == hi)
+    {
+        st <<= 32;
+        st += lo;
+    }
+    else
+    {
+        st <<= 32;
+        paddr = bcm2835_st + BCM2835_ST_CLO/4;
+        st += bcm2835_peri_read(paddr);
+    }
+    return st;
+}
+
+/* Read with memory barriers from peripheral
+ *
+ */
+uint32_t bcm2835_peri_read(volatile uint32_t* paddr)
+{
+    uint32_t ret;
+    if (debug)
+    {
+		printf("bcm2835_peri_read  paddr %p\n", (void *) paddr);
+		return 0;
+    }
+    else
+    {
+       __sync_synchronize();
+       ret = *paddr;
+       __sync_synchronize();
+       return ret;
+    }
+}
+
+/* Delays for the specified number of microseconds with offset */
+void bcm2835_st_delay(uint64_t offset_micros, uint64_t micros)
+{
+    uint64_t compare = offset_micros + micros;
+
+    while(bcm2835_st_read() < compare)
+	;
+}
+
+
+static void *mapmem(const char *msg, size_t size, int fd, off_t off)
+{
+    void *map = mmap(NULL, size, (PROT_READ | PROT_WRITE), MAP_SHARED, fd, off);
+    if (map == MAP_FAILED)
+	fprintf(stderr, "bcm2835_init: %s mmap failed: %s\n", msg, strerror(errno));
+    return map;
+    
+}//mapmen
+
+
+
+static void unmapmem(void **pmem, size_t size)
+{
+    if (*pmem == MAP_FAILED) return;
+    munmap(*pmem, size);
+    *pmem = MAP_FAILED;
+    
+}//unmapmem
+
+
+
+int bcm2835_init(void)   //Set up memory map interface to System Timer
+{
+	int  memfd;
+   FILE *fp;
+	
+	
+	if ((fp = fopen(BMC2835_RPI2_DT_FILENAME , "rb")))
+   {
+        unsigned char buf[16];
+        uint32_t base_address;
+        uint32_t peri_size;
+        if (fread(buf, 1, sizeof(buf), fp) >= 8)
+        {
+            base_address = (buf[4] << 24) |
+              (buf[5] << 16) |
+              (buf[6] << 8) |
+              (buf[7] << 0);
+            
+            peri_size = (buf[8] << 24) |
+              (buf[9] << 16) |
+              (buf[10] << 8) |
+              (buf[11] << 0);
+            
+            if (!base_address)
+            {
+                /* looks like RPI 4 */
+                base_address = (buf[8] << 24) |
+                      (buf[9] << 16) |
+                      (buf[10] << 8) |
+                      (buf[11] << 0);
+                      
+                peri_size = (buf[12] << 24) |
+                (buf[13] << 16) |
+                (buf[14] << 8) |
+                (buf[15] << 0);
+            }
+            /* check for valid known range formats */
+            if ((buf[0] == 0x7e) &&
+                    (buf[1] == 0x00) &&
+                    (buf[2] == 0x00) &&
+                    (buf[3] == 0x00) &&
+                    (base_address == BCM2835_RPI2_PERI_BASE ))  //Base address for RPI2 and RPI3
+            {
+                bcm2835_peripherals_base = (off_t)base_address;
+                bcm2835_peripherals_size = (size_t)peri_size;
+                //printf("Base mapping is for RPI2/3\n");
+					 //printf("The value is 0x%0x\n",base_address);
+            }
+            
+        
+        }
+                
+		fclose(fp);
+		
+		/* Open the master /dev/mem device */
+      if ((memfd = open("/dev/mem", O_RDWR | O_SYNC) ) < 0) 
+		{
+		  fprintf(stderr, "bcm2835_init: Unable to open /dev/mem: %s\n",
+			  strerror(errno)) ;
+		  printf("Exiting program ...\n");
+		  exit(0);
+		}
+		
+		/* Base of the peripherals block is mapped to VM */
+      bcm2835_peripherals = mapmem("gpio", bcm2835_peripherals_size, memfd, bcm2835_peripherals_base);
+      if (bcm2835_peripherals == MAP_FAILED)
+      {
+			printf("Failed to map memory for peripherals - Exiting program ... \n");
+			exit(0);	
+		}	 
+      
+      //Get base address for system timer: 
+      
+      bcm2835_st   = bcm2835_peripherals + BCM2835_ST_BASE/4;
+      
+      return 1;
+		
+		
+		
+   }
+   else
+   {
+		//Could not open device tree file:
+		printf("Could not access device tree file - exiting program ...\n");
+		exit(0);	
+		
+	}	
+	
+	
+}//bcm2835_init	
+
+
+int bcm2835_close(void)
+{
+	
+	 unmapmem((void**) &bcm2835_peripherals, bcm2835_peripherals_size);
+    bcm2835_peripherals = MAP_FAILED;
+    bcm2835_st   = MAP_FAILED;
+    
+    
+    return 1; /* Success */
+	
+
+}//bcm2835_close
 

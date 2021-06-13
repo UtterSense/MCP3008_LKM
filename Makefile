@@ -14,7 +14,7 @@ TARGET = test
 all:
 	make -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) modules
 #	$(CC) $(INCLUDES) main.c  graph.c mcp3008.c  ../../Graphics/Simple-Graphics/graphic_lx.c -lgraph -lm -o test
-	$(CC) -I$(GPH_INCLUDE) -I$(DS_INCLUDE) main.c  graph.c mcp3008.c  ../../Graphics/Simple-Graphics/graphic_lx.c $(DS_SRC_DIR)ds3231.c -lbcm2835 -lgraph -lm -o $(TARGET)
+	$(CC) -I$(GPH_INCLUDE) -I$(DS_INCLUDE) main.c  graph.c mcp3008.c  ../../Graphics/Simple-Graphics/graphic_lx.c $(DS_SRC_DIR)ds3231.c -lgraph -lm -o $(TARGET)
 
 clean:
 	make -C /lib/modules/$(shell uname -r)/build/ M=$(PWD) clean
