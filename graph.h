@@ -31,12 +31,12 @@
 
 //USER DEFINES: ------------------------------------------------------------
 #define SAMPLE_MODE		1			//0: Delay; 1: fast looping - no delay
-#define SAMPLE_RATE	   35000.0f   //Define required value for bsm delay usage
+#define SAMPLE_RATE	   34500.0f   //Define required value for bsm delay usage
 											 //Fast looping (below figures based on metric tests):
 											 //9500.0f if SPI Clock is 0.68MHz
 											 //35000.0f if SPI Clock is 1.37MHz
 											 	
-#define MAX_SIG_FREQ		300.0f   //Signal bandwidth or frequency for single frequency
+#define MAX_SIG_FREQ		500.0f   //Signal bandwidth or frequency for single frequency
 #define NUM_CYCLES		3.0f		//Number of Cycles to display (maximum frequency) 
 #define DISPLAY_LEN  	(int) round( (SAMPLE_RATE/MAX_SIG_FREQ)*NUM_CYCLES )  //SAMPLE_RATE //(int)((float)SAMPLE_RATE/(float)MAX_SIG_FREQ)*(float)NUM_CYCLES   //Num samples to display in trace 
 #define DATA_LEN  		DISPLAY_LEN //1000 //This is also length of x axis on plot
