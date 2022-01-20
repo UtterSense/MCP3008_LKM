@@ -143,6 +143,29 @@ float readADC()
 }//readADC	
 
 
+uint16_t readADC1()
+{
+	
+	float volts;		
+	uint8_t wbuf[2];
+   wbuf[0] = 0x00;
+   wbuf[1] = 0x00;
+   
+   uint16_t val;
+   
+   
+	read(fd,wbuf,sizeof(wbuf));
+	
+   val = getVal(wbuf[0],wbuf[1]);
+   
+           
+   return val;
+   
+   
+	
+} // readADC1	
+
+
 uint16_t getVal(uint8_t msb,uint8_t lsb)
 {
    
@@ -150,6 +173,8 @@ uint16_t getVal(uint8_t msb,uint8_t lsb)
    uint16_t val_lsb = lsb;
 	val_msb = val_msb << 8;
 	
+   //return lsb;
+   
    return  val_msb | val_lsb;
    
 }//getVal

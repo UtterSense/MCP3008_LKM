@@ -76,7 +76,8 @@ FILE *fp;
 //char *filename = "rtc_metrics_clk_0_68.csv";
 //char *filename = "rtc_metrics_clk_1_37.csv";
 //char *filename = "linux_metrics_clk_1_37_fastloop.csv";
-char *filename = "lkm_linux_timer_integrity_corr.csv";
+//char *filename = "lkm_linux_timer_integrity_corr.csv";
+char *filename = "spi_data.txt";
 bool saveToFile = false;
 
 
@@ -245,6 +246,8 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 	   exit(1);
 	}
 	
+	
+	
 	if((PLOT_COPY = malloc(DATA_LEN*sizeof(float))) == NULL)
 	{
 		printf("Problem allocationg mermory for display data\n");
@@ -258,6 +261,7 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 	{
 		PLOT_BUFFER[i] = 0.0;
 		PLOT_COPY[i] = 0.0;
+		
 	}
 	
 	//Intialise ref count:
@@ -289,6 +293,17 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 	//Initialise graph:
 	init_graph();
 	
+	//Open file for data:
+	 if(saveToFile)
+	 {
+		 if( (fp=fopen(filename,"wt")) == NULL)
+		 {
+			printf("Error opening file -aborting program!\n");
+			exit(0);	 
+		 }
+    }
+ 
+	
 	
 	if(SAMPLE_MODE == 0) //Delay mode
 	{
@@ -302,12 +317,14 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 				bcm2835_delayMicroseconds(sample_delay);
 				
 				PLOT_BUFFER[i] = readADC();
+				
 			}	
 			
 			//Graph when buffer is full
 			count += DATA_LEN;
 		   if(count >= refCnt)
 			{		
+				
 				doGraph();
 				count = 0;
 			}	

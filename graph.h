@@ -30,13 +30,13 @@
 //float SAMPLE_RATE;
 
 //USER DEFINES: ------------------------------------------------------------
-#define SAMPLE_MODE		1			//0: Delay; 1: fast looping - no delay
-#define SAMPLE_RATE	   34500.0f   //Define required value for bsm delay usage
+#define SAMPLE_MODE		0			//0: Delay; 1: fast looping - no delay
+#define SAMPLE_RATE	   1000.0f   //Define required value for bsm delay usage
 											 //Fast looping (below figures based on metric tests):
 											 //9500.0f if SPI Clock is 0.68MHz
 											 //35000.0f if SPI Clock is 1.37MHz
 											 	
-#define MAX_SIG_FREQ		500.0f   //Signal bandwidth or frequency for single frequency
+#define MAX_SIG_FREQ		10.0f   //Signal bandwidth or frequency for single frequency
 #define NUM_CYCLES		3.0f		//Number of Cycles to display (maximum frequency) 
 #define DISPLAY_LEN  	(int) round( (SAMPLE_RATE/MAX_SIG_FREQ)*NUM_CYCLES )  //SAMPLE_RATE //(int)((float)SAMPLE_RATE/(float)MAX_SIG_FREQ)*(float)NUM_CYCLES   //Num samples to display in trace 
 #define DATA_LEN  		DISPLAY_LEN //1000 //This is also length of x axis on plot
@@ -46,7 +46,7 @@
 #define DATA_SKIP		0//500  //Define the number of incoming data samples to ignore before string plotting 
 							//Avoids any sprious data coming through on initial startup/reset
 							
-#define DC_OFFSET		-1.6//-1.65 + 0.20//-2.25//-2.5//Define offset to match dc offset provided in MCU							
+#define DC_OFFSET		0 //-1.6//-1.65 + 0.20//-2.25//-2.5//Define offset to match dc offset provided in MCU							
 									//There appears to be 0.25 difference in expected value (could be down to resistor error toloerance)
 
 
@@ -58,7 +58,7 @@
 #define X_LABEL      "Time"
 #define Y_LABEL      "VOLTS"
 #define BCK_COLOR     0             //Color of graph background
-#define TRACE_COLOR   2             //Color of plot tracw
+#define TRACE_COLOR   YELLOW//2             //Color of plot trace:2->green
 
 #define LEGEND_CAPTION1	"Vmax:            V"
 #define LEGEND_CAPTION2	"Vmin:             V"
@@ -70,7 +70,7 @@
 
 //NB - Ensure we do not define 0 for log plots
 #define Y_MIN        -1.5
-#define Y_MAX        1.5
+#define Y_MAX        3.0
 #define X_MIN        0.0
 #define X_MAX        DATA_LEN
 
