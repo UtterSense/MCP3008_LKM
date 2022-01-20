@@ -298,6 +298,8 @@ uint16_t readRaw()
 	message[0] = rx_data[1];
    message[1] = rx_data[2];
 
+   
+
 	return val;
 	
 }//readRaw
@@ -392,9 +394,10 @@ static ssize_t dev_read(struct file *filep, char *buffer, size_t len, loff_t *of
 	//Read ADC value
 	val = readRaw();
 	
-	//printk(KERN_INFO "val: %x\n", val);
-	size_of_message = strlen(message);
-   
+	// printk(KERN_INFO "val: %x\n", val);
+	//size_of_message = strlen(message);
+ 	 size_of_message = MES_LEN;  
+      
    //NB: Need this function to copy from kernel space to user space!!
    error_count = copy_to_user(buffer, message, size_of_message);
      

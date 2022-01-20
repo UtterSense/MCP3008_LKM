@@ -40,6 +40,7 @@ static char* jni_test(void);
 int MCP3008_Init(float sample_rate);
 void setParams(int rm, int ch);  //Set ADC params
 float readADC();
+uint16_t readADC1();
 uint16_t getVal(uint8_t msb,uint8_t lsb);
 
 
