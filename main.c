@@ -287,8 +287,7 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 
    printf("DATA_LEN: %d\n",(int)DATA_LEN);
 	printf("refCnt: %d\n",refCnt);
-		
-		
+			
 	
 	//Initialise graph:
 	init_graph();
@@ -364,26 +363,42 @@ void sample_BufferMode()  //Send data for graphing when data buffer
 void init_graph()
 {
 	
-	//Initialise Graphics
+	//Initialise Graphics			
 	Graphic_Init(X_WIN_SIZE,Y_WIN_SIZE,PLOT_MODE,LOG_MODE, X_LABEL, Y_LABEL, GRAPH_TITLE,
-				Y_MIN,Y_MAX,X_MIN, X_MAX,
-				X_INT,Y_INT,X_GRAD,Y_GRAD,
-				SHOW_GRID, G_INT,
-				X_SHOW,Y_SHOW,ORI_LINE,BITMAP,
-				BCK_COLOR, AUDIOFILE, INI_AUDIOFILE,
-				NUM_CHANS, SAMPLE_RATE, BITS_PER_SAMPLE);
+					Y_MIN,Y_MAX,X_MIN, X_MAX,
+					X_INT,Y_INT,X_GRAD,Y_GRAD,X_LABEL_PREC,Y_LABEL_PREC,
+					SHOW_GRID, G_INT,
+					X_SHOW,Y_SHOW,ORI_LINE,ORI_LINE_COLOR,BITMAP,
+					BCK_COLOR, AUDIOFILE, INI_AUDIOFILE,
+					NUM_CHANS, AUDIO_SAMPLE_RATE, BITS_PER_SAMPLE);
+			
+	//Show the X grauation lines (currently swithed off when switching off XAXis number scaling
+	
+					
+					
+	if (DRAW_VER_MARKER)
+		{
+			drawVerticalMarker (V_MARKER_POS,V_MARKER_COLOR,MARKER_WIDTH);	
+		}				
 		
 	 
 	//Setup Legend:
 	if(legend_flg)
 	{
-		l_caps.vmax_caption = LEGEND_CAPTION1;
-		l_caps.vmin_caption = LEGEND_CAPTION2;
-		l_caps.vavg_caption = LEGEND_CAPTION3;
-		l_caps.vpp_caption = LEGEND_CAPTION4;
-		 int color = 15; //Font color for captions
-		 legendCaptions(l_caps,color);
+		l_caps.data1_caption = LEGEND_CAPTION1;
+		l_caps.data2_caption = LEGEND_CAPTION2;
+		l_caps.data3_caption = LEGEND_CAPTION3;
+		l_caps.data4_caption = LEGEND_CAPTION4;
+		
+		l_data.data1_unit = "V";
+		l_data.data2_unit = "V";
+		l_data.data3_unit = "s";
+		l_data.data4_unit = "Hz";
+		
+		 int color = WHITE; //Font color for captions
+		 legendCaptions(l_caps,color,LEGEND_NUM_BOXES,LEGEND_LEFT,LEGEND_TOP);
 	}
+	
 	
 	
 }//init_graph	
@@ -405,11 +420,11 @@ void doGraph()
 		//Refresh legend area:
 		if(legend_flg)
 		{
-			l_data.vmax = vmaxCopy;
-			l_data.vmin = vminCopy;
-			l_data.vavg = vavgCopy;
-			l_data.vpp = vppCopy;
-			legend(l_data,true); //This should erase previous data write
+			l_data.data1 = vavgCopy;
+			l_data.data2 = vampCopy;
+			l_data.data3 = time_divCopy;
+			l_data.data4 = freqCopy;
+			legend(l_data,true,LEGEND_NUM_BOXES,PLOT1_COLOR,LEGEND_LEFT,LEGEND_TOP); //This should erase previous data write
 			//legend_flg = false; //temp
 		}
 		
@@ -439,21 +454,22 @@ void doGraph()
 	
 	if(legend_flg)
 	{
-		 l_data.vmax = vmax; //sigFreq;
-		 l_data.vmin = vmin; //vpp;
-		 l_data.vavg = vavg; //Mean voltage
-		 l_data.vpp = vpp;  //Peak to peak voltage
-		legend(l_data,false); //Redraw legend
+		 l_data.data1 = vavg; //Mean sigFreq;
+		 l_data.data2 = vamp; //Amplitude;
+		 l_data.data3 = time_div; //Time for one display division
+		 l_data.data4 = freq;  //Peak to peak voltage
+		legend(l_data,false,LEGEND_NUM_BOXES,PLOT1_COLOR,LEGEND_LEFT,LEGEND_TOP); //Redraw legend
 		//legend_flg = false; //temp
 	}
 	
 	
-	plotTrace(TRACE_COLOR);
-	graduations(15);  //Refresh grduations
+	plotTrace(PLOT1_COLOR);
+	graduations(ORI_LINE_COLOR);  //Refresh grduations
 			
 	copyDataBuf();  //Copy current graph trace
 	copyLegendData();
 	
+	//legend_flg = false;  //temp
 	
 }//doGraph	
 
@@ -676,7 +692,6 @@ gettimeofday(&tv_start,NULL);
 //	  (We need to close the connection to the serial terminal)
 void ctrl_c_handler(int sig)
 {
-   
    if(sig == SIGINT) //Check it is the right user ID //NB: Not working at the moment
    {
          printf("\nWe have received the CTRL-C signal - aborting sample looping!\n");
@@ -688,8 +703,8 @@ void ctrl_c_handler(int sig)
 				free(dataY);
 		   }	
          
-         EXIT_PROGRAM = 1; //This will stop program
-         
+         //EXIT_PROGRAM = 1; //This will stop program
+         exit(0);
    }
    
          
