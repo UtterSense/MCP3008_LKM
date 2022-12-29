@@ -42,7 +42,7 @@
 #define DATA_LEN  		DISPLAY_LEN //1000 //This is also length of x axis on plot
 #define REFRESH_MODE	0	//Plot refresh mode:   0: Per new sample; 1: Data buffer complete
 #define REFRESH_CNT     1.5*SAMPLE_RATE   //Count at which to refresh graph
-#define GRAPH_MODE		1   //0: Simulation data; 1: Real data from Serial Port      
+#define GRAPH_MODE	1   //0: Simulation data; 1: Real data from Serial Port      
 #define DATA_SKIP		0//500  //Define the number of incoming data samples to ignore before string plotting 
 							//Avoids any sprious data coming through on initial startup/reset
 							
@@ -51,51 +51,126 @@
 
 
 //GRAPH PLOTTING:
+//#define TRACE_COLOR   YELLOW//2             //Color of plot trace:2->green
+
+
+//GRAPH PLOTTING: -----------------------------------------------------------------------------
 #define X_WIN_SIZE   640      //NB: These appear to be fixed for Linux implementation
 #define Y_WIN_SIZE   475   
 
 #define GRAPH_TITLE  "EEG SIMULATION SIGNAL"
-#define X_LABEL      "Time"
+#define X_LABEL      ""
 #define Y_LABEL      "VOLTS"
-#define BCK_COLOR     0             //Color of graph background
-#define TRACE_COLOR   YELLOW//2             //Color of plot trace:2->green
+#define BCK_COLOR     0             //Color of graph background (Options:0: black bck,white grid; 15: White bck, black grid)
 
-#define LEGEND_CAPTION1	"Vmax:            V"
-#define LEGEND_CAPTION2	"Vmin:             V"
-#define LEGEND_CAPTION3	"Vavg:             V"
-#define LEGEND_CAPTION4	"Vpp:              V"
 
-#define PLOT_MODE    LINE //0
+
+#define ORI_LINE_COLOR	DARKGRAY				//Colour of the horizontal origin line 
+
+
+//Legend data boxes
+#define LEGEND_NUM_BOXES	4
+#define LEGEND_LEFT			38			// Start left position for legend boxes 
+#define LEGEND_TOP			446		// Top position for legend boxex
+#define LEGEND_BCK_COLOR	GRAY
+
+
+
+
+#define NUM_PLOTS 	1    //This is the number of plots appearing on the graph
+#define PLOT_MODE    CIRCLE_FILLED//CIRCLE_FILLED //SQUARE_BORDER //2
 #define LOG_MODE     0
 
+#define PLOT1_MODE	LINE
+#define PLOT2_MODE	LINE
+#define PLOT3_MODE	SQUARE_BORDER
+#define PLOT4_MODE	SQUARE_BORDER
+
+
+#define PLOT1_COLOR   YELLOW//1              
+#define PLOT2_COLOR   BLACK//1
+#define PLOT3_COLOR   BLUE//1
+#define PLOT4_COLOR   BLUE//4					
+
+
+// Defines for Line Plot widths (pixels)
+#define PLOT1_LINE_WIDTH	3
+#define PLOT2_LINE_WIDTH	5
+#define PLOT3_LINE_WIDTH	1
+#define PLOT4_LINE_WIDTH	1
+
+//Define for symbol sizes (circle, square, triangle)
+#define SYMBOL_SIZE			2
+
+
+#define PLOT1_SUPPRESS	false // Suppress the plot output
+#define PLOT2_SUPPRESS	true // Suppress the plot output
+#define PLOT3_SUPPRESS	true // Suppress the plot output
+#define PLOT4_SUPPRESS	true // Suppress the plot output
+
+
+struct legend_info info[NUM_PLOTS];
+
 //NB - Ensure we do not define 0 for log plots
-#define Y_MIN        -1.5
-#define Y_MAX        3.0
-#define X_MIN        0.0
-#define X_MAX        DATA_LEN
+#define Y_MIN        	-4.0
+#define Y_MAX        	4.0
+#define X_MIN        	0.0//0.90
+#define X_MAX        	DATA_LEN
 
-#define X_INT        10
-#define Y_INT        10
-#define G_INT        10
 
-#define SHOW_GRID    true  //Show gradations 
-#define X_GRAD       true
-#define Y_GRAD       true
-#define X_SHOW       true
-#define Y_SHOW       true
-#define ORI_LINE     true    //Draw the x axis origin line
-#define BITMAP       false
+
+#define X_INT        	12
+#define Y_INT        	8 //10
+#define G_INT        	8
+
+
+#define SHOW_GRID    	true  //Show gradations 
+#define X_GRAD       	true  // Show X graduations 
+#define Y_GRAD       	true  // Show Y graduations
+#define X_SHOW       	false  // Show X-axis scale
+#define Y_SHOW       	true  // Show Y-axis scale
+#define X_LABEL_PREC		1		//X-axis decimal precision for number labelling
+#define Y_LABEL_PREC		1		//Y-axis decimal precision for number labelling
+#define ORI_LINE     	true    //Draw the x axis origin line
+#define BITMAP       	false
+
 
 //Audio files:
 #define AUDIOFILE      "test.wav"
 #define INI_AUDIOFILE   "ini.wav"
 #define NUM_CHANS       1
-//#define SAMPLE_RATE     11000
+#define AUDIO_SAMPLE_RATE     11000
 #define BITS_PER_SAMPLE 16
 #define BITS_PER_SAMPLE 16
 
+
 //Legend
+#define LEGEND_CAPTION1	"Vavg:                "
+#define LEGEND_CAPTION2	"Vamp:                "
+#define LEGEND_CAPTION3	"Ti/Di:               "
+#define LEGEND_CAPTION4	"Freq:                "
+#define LEGEND_PLOT_SYM1 		LINE
+#define LEGEND_SYM1_COLOR		RED
+#define LEGEND_PLOT_SYM2 		LINE
+#define LEGEND_SYM2_COLOR		CYAN
+#define LEGEND_PLOT_SYM3 		CIRCLE_FILLED
+#define LEGEND_SYM3_COLOR		CYAN
+#define LEGEND_PLOT_SYM4 		CIRCLE_FILLED
+#define LEGEND_SYM4_COLOR		CYAN
+
+
+//bool legend_flg = true;  //Flag to include legend
 extern bool legend_flg;  //Flag to include legend
+
+// Draw vertical Marker (a vertical line at a specific x position)
+#define DRAW_VER_MARKER		false
+#define MARKER_WIDTH		   5 //Width in pixels 
+#define V_MARKER_POS		100.00
+#define V_MARKER_COLOR	YELLOW
+
+
+
+
 							
 //---------------------------------------------------------------------------------------------------------------------
 
@@ -105,11 +180,13 @@ float *PLOT_BUFFER, *PLOT_COPY;
 float *pData;
 extern int refCnt;
 
+extern double vavg;
+extern double vamp;
 extern double vmax;
 extern double vmin;
-extern double vavg;
-extern double vpp ;
-extern double vmaxCopy,vminCopy,vavgCopy,vppCopy;
+extern double time_div;
+extern double freq ;
+extern double vavgCopy,vampCopy,time_divCopy,freqCopy;
 
 
 //PLOTTING ATTRIBUTES
@@ -125,6 +202,7 @@ extern bool plotStart;
 
 //FUNCTION DECLARATIONS -------------------------
 void plotTrace(int color);
+void simData();
 void refreshCanvas();
 void removeGrid();
 void copyDataBuf();
